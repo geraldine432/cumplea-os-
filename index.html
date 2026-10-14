@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>¡Feliz Cumpleaños Tía María! - 3D Inmersivo</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Playfair+Display:ital,wght@0,600;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-light: #f3e5ab;
+            --dark-bg: #030303;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+            perspective: 1200px;
+            min-height: 100vh;
+        }
+
+        /* LIENZO 3D DE FONDO */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* EFECTO CINEMATOGRÁFICO */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
+            z-index: 99;
+            background-size: 100% 4px;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        /* PANTALLA DE CUENTA REGRESIVA 3D */
+        #countdown-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+
+        .countdown-number {
+            font-family: 'Cinzel', serif;
+            font-size: 20vw;
+            color: var(--gold);
+            text-shadow: 0 0 40px rgba(212, 175, 55, 0.9);
+            animation: pulse3D 1s infinite alternate;
+        }
+
+        .countdown-text {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        @keyframes pulse3D {
+            0% { transform: scale(0.9) translateZ(0px); opacity: 0.7; }
+            100% { transform: scale(1.1) translateZ(50px); opacity: 1; }
+        }
+
+        /* CONTENEDOR 3D FLOTANTE */
+        .cinema-container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            transform-style: preserve-3d;
+        }
+
+        /* MARQUESINA 3D */
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 20px;
+            width: 100%;
+            transform: translateZ(40px);
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        .movie-badge {
+            font-size: 0.85rem;
+            letter-spacing: 6px;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 4.5vw, 3.8rem);
+            color: var(--gold-light);
+            text-shadow: 0 10px 25px rgba(0, 0, 0, 0.9), 0 0 20px rgba(212, 175, 55, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* TARJETAS CON EFECTO 3D DINÁMICO */
+        .panel-3d {
+            background: linear-gradient(145deg, rgba(20, 20, 20, 0.85), rgba(10, 10, 10, 0.95));
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 35px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(212, 175, 55, 0.08);
+            transform-style: preserve-3d;
+            transform: translateZ(30px);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .panel-3d:hover {
+            box-shadow: 0 25px 60px rgba(212, 175, 55, 0.25);
+        }
+
+        .message-box p {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.3rem, 3vw, 1.6rem);
+            line-height: 1.6;
+            color: #f5f5f5;
+            font-style: italic;
+            transform: translateZ(25px);
+        }
+
+        /* ICONOS 3D */
+        .icons-bar {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            font-size: 2.2rem;
+            color: var(--gold);
+            margin-bottom: 35px;
+            transform: translateZ(35px);
+        }
+
+        .icons-bar i {
+            filter: drop-shadow(0 5px 10px rgba(212, 175, 55, 0.5));
+            animation: floatIcon 3s ease-in-out infinite alternate;
+        }
+
+        .icons-bar i:nth-child(2) { animation-delay: 0.5s; }
+        .icons-bar i:nth-child(3) { animation-delay: 1s; }
+        .icons-bar i:nth-child(4) { animation-delay: 1.5s; }
+
+        @keyframes floatIcon {
+            0% { transform: translateY(0) translateZ(10px); }
+            100% { transform: translateY(-8px) translateZ(30px); }
+        }
+
+        /* CLAQUETA 3D INTERACTIVA */
+        .slate-container {
+            background: #111;
+            border: 3px solid #444;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            cursor: pointer;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.9);
+            transform: translateZ(45px);
+            transition: transform 0.2s ease, border-color 0.3s ease;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .slate-container:active {
+            transform: translateZ(20px) scale(0.97);
+            border-color: var(--gold);
+        }
+
+        .slate-top {
+            background: #222;
+            height: 45px;
+            border-bottom: 6px dashed #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            transform-origin: left;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .slate-top.clacked {
+            transform: rotate(-15deg);
+        }
+
+        .stripe {
+            width: 35px;
+            height: 100%;
+            background: #fff;
+            clip-path: polygon(0 0, 100% 0, 70% 100%, 0% 100%);
+        }
+
+        .slate-body {
+            padding: 20px;
+            font-family: 'Cinzel', serif;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            color: #ccc;
+        }
+
+        .slate-field span {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--gold);
+            letter-spacing: 1px;
+        }
+
+        .slate-field strong {
+            font-size: 1.05rem;
+            color: #fff;
+        }
+
+        .slate-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 35px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transform: translateZ(25px);
+        }
+
+        /* BOTÓN DE ACCIÓN 3D */
+        .launch-party-btn {
+            background: linear-gradient(135deg, var(--gold), #b38f28);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateZ(20px);
+            transition: transform 0.2s ease;
+        }
+
+        .launch-party-btn:active {
+            transform: translateZ(5px) scale(0.95);
+        }
+
+        /* CRÉDITOS 3D */
+        .credits-card {
+            border-top: 1px solid #333;
+            padding-top: 25px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #aaa;
+            line-height: 1.8;
+            transform: translateZ(30px);
+        }
+
+        .credits-card p strong {
+            color: var(--gold);
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .family-names {
+            color: #fff;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            word-wrap: break-word;
+            padding: 0 10px;
+        }
+
+        /* FRASE FLOTANTE 3D */
+        .flying-phrase-container {
+            margin-top: 20px;
+            min-height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .flying-phrase {
+            color: var(--gold-light);
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-style: italic;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+            opacity: 0;
+            cursor: pointer;
+            transform: translateZ(40px);
+        }
+
+        .flying-phrase.animate {
+            animation: flyAndFade3D 5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes flyAndFade3D {
+            0% { opacity: 0; transform: translateY(20px) translateZ(20px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(-5px) translateZ(50px) scale(1.05); }
+            30% { transform: translateY(0) translateZ(40px) scale(1); }
+            75% { opacity: 1; transform: translateY(-5px) translateZ(40px) scale(1); }
+            100% { opacity: 0; transform: translateY(-25px) translateZ(10px) scale(0.9); }
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0) translateZ(40px); }
+            50% { transform: translateY(-5px) translateZ(50px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FONDO 3D CON THREE.JS (Esferas y Partículas Doradas) -->
+    <div id="webgl-container"></div>
+
+    <!-- PANTALLA DE CUENTA REGRESIVA -->
+    <div id="countdown-overlay">
+        <div class="countdown-number" id="count-num">3</div>
+        <div class="countdown-text">Iniciando Experiencia 3D</div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL ENCAPSULADO EN 3D -->
+    <div class="cinema-container" id="main-content">
+        
+        <header>
+            <span class="movie-badge"><i class="fa-solid fa-clapperboard"></i> Experiencia 3D Interactiva</span>
+            <h1>¡Feliz Cumpleaños Tía María!</h1>
+        </header>
+
+        <!-- TARJETA 3D DEL MENSAJE -->
+        <div class="panel-3d message-box" id="messageCard">
+            <p>“Feliz cumpleaños tía María, te mandamos muchos abrazos. Esperamos que la pases bonito el día de hoy.”</p>
+        </div>
+
+        <!-- ICONOS 3D -->
+        <div class="icons-bar">
+            <i class="fa-solid fa-film" title="Cine"></i>
+            <i class="fa-solid fa-video" title="Cámara"></i>
+            <i class="fa-solid fa-music" title="Música"></i>
+            <i class="fa-solid fa-star" title="Estrella"></i>
+        </div>
+
+        <!-- CLAQUETA 3D -->
+        <div class="slate-container" onclick="triggerSlate()">
+            <div class="slate-top" id="slateTop">
+                <div class="stripe"></div>
+                <div class="stripe"></div>
+                <div class="stripe"></div>
+                <div class="stripe"></div>
+            </div>
+            <div class="slate-body">
+                <div class="slate-field">
+                    <span>PRODUCCIÓN</span>
+                    <strong>VIDA & ARTE</strong>
+                </div>
+                <div class="slate-field">
+                    <span>DIRECTORA</span>
+                    <strong>TÍA MARÍA</strong>
+                </div>
+                <div class="slate-field">
+                    <span>ESCENA</span>
+                    <strong>CUMPLEAÑOS 3D</strong>
+                </div>
+                <div class="slate-field">
+                    <span>MÚSICA</span>
+                    <strong>ARMONÍA TOTAL</strong>
+                </div>
+            </div>
+        </div>
+        <div class="slate-hint">👇 Toca la claqueta para activar efectos 3D</div>
+
+        <!-- SECCIÓN DE CELEBRACIÓN -->
+        <div class="panel-3d">
+            <h3 style="font-family: 'Cinzel', serif; color: var(--gold); margin-bottom: 10px;">Gran Gala de Celebración</h3>
+            <p style="color: #bbb; font-size: 0.9rem; margin-bottom: 20px;">Una producción única en tercera dimensión.</p>
+            <button class="launch-party-btn" onclick="launchThematicConfetti()">
+                <i class="fa-solid fa-clapperboard"></i> ¡Lanzar Confetti 3D!
+            </button>
+        </div>
+
+        <!-- CRÉDITOS -->
+        <div class="credits-card">
+            <p><strong>De parte de toda la familia:</strong></p>
+            <div class="family-names">
+                Yola, Angel, Pablo, Santy, Sandra, Andres, Adriana, Daniel, Elena, Tatty
+            </div>
+            <div class="flying-phrase-container">
+                <div class="flying-phrase" id="flyingPhrase" onclick="triggerFlyingPhrase()">
+                    ¡Feliz cum!
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* ==========================================================
+           1. MOTOR 3D INMERSIVO (THREE.JS)
+           ========================================================== */
+        let scene, camera, renderer, particles, orbGroup;
+
+        function init3D() {
+            const container = document.getElementById('webgl-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 450;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Grupo de esferas y partículas 3D flotantes
+            orbGroup = new THREE.Group();
+            scene.add(orbGroup);
+
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 800;
+                positions[i + 1] = (Math.random() - 0.5) * 800;
+                positions[i + 2] = (Math.random() - 0.5) * 500;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                color: 0xd4af37,
+                size: 5,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            orbGroup.add(particles);
+
+            // Añadir anillos flotantes 3D dorados
+            const ringGeo = new THREE.TorusGeometry(120, 3, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xd4af37, wireframe: true, transparent: true, opacity: 0.25 });
+            const ring1 = new THREE.Mesh(ringGeo, ringMat);
+            ring1.rotation.x = Math.PI / 3;
+            orbGroup.add(ring1);
+
+            window.addEventListener('resize', onWindowResize);
+
+            // Control giroscópico avanzado para iPhone (Safari)
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    if (event.gamma && event.beta) {
+                        const tiltX = event.gamma / 25;
+                        const tiltY = event.beta / 25;
+                        if (orbGroup) {
+                            orbGroup.rotation.y = tiltX * 0.6;
+                            orbGroup.rotation.x = tiltY * 0.6;
+                        }
+                    }
+                }, true);
+            }
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (orbGroup) {
+                orbGroup.rotation.y += 0.0015;
+                orbGroup.rotation.x += 0.0008;
+            }
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Efecto Parallax táctil dinámico en iPhone para rotar las tarjetas en 3D
+        const messageCard = document.getElementById('messageCard');
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const x = (e.touches[0].clientX / window.innerWidth - 0.5) * 20;
+                const y = (e.touches[0].clientY / window.innerHeight - 0.5) * 20;
+                messageCard.style.transform = `translateZ(40px) rotateX(${-y}deg) rotateY(${x}deg)`;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            messageCard.style.transform = `translateZ(30px) rotateX(0deg) rotateY(0deg)`;
+        });
+
+
+        /* ==========================================================
+           2. INICIO Y EFECTO DE CONFETI GARANTIZADO (Z-INDEX 9999)
+           ========================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            init3D();
+            animate3D();
+
+            const countNum = document.getElementById('count-num');
+            const overlay = document.getElementById('countdown-overlay');
+            const mainContent = document.getElementById('main-content');
+
+            let count = 3;
+            const timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countNum.textContent = count;
+                } else if (count === 0) {
+                    countNum.textContent = "¡ACCIÓN!";
+                    countNum.style.fontSize = "14vw";
+                } else {
+                    clearInterval(timer);
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        mainContent.style.opacity = '1';
+                        launchThematicConfetti();
+                        triggerFlyingPhrase();
+                    }, 1000);
+                }
+            }, 1000);
+        });
+
+        function triggerFlyingPhrase() {
+            const phrase = document.getElementById('flyingPhrase');
+            phrase.classList.remove('animate');
+            void phrase.offsetWidth;
+            phrase.classList.add('animate');
+        }
+
+        function launchThematicConfetti() {
+            // Se fuerza un zIndex ultra alto para que el confeti aparezca siempre encima de todo
+            confetti({
+                particleCount: 70,
+                spread: 120,
+                origin: { y: 0.5 },
+                zIndex: 99999,
+                colors: ['#d4af37', '#f3e5ab', '#ffffff', '#800020']
+            });
+        }
+
+        function triggerSlate() {
+            const slateTop = document.getElementById('slateTop');
+            slateTop.classList.add('clacked');
+            launchThematicConfetti();
+            triggerFlyingPhrase();
+
+            setTimeout(() => {
+                slateTop.classList.remove('clacked');
+            }, 150);
+        }
+    </script>
+</body>
+</html>
+
